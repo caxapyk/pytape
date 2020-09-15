@@ -1,2 +1,2 @@
 # pytape
-Client-Server application to remote backup\restore and manage tape device in Linux written on Python
+GNU mt and tar utils wrapper to remote backup\restore and manage tape device in Linux written on Python TCP sockets
