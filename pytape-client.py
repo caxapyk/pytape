@@ -7,6 +7,8 @@ import argparse
 import socket
 import sys
 
+ERR_CODE = '0x01'
+
 
 class Client():
     def connect(self, host, port):
@@ -34,9 +36,15 @@ class Client():
     def send_command(self, command):
         try:
             self.sock.sendall(command)
-            response = self.sock.recv(1024).decode('utf-8')
+            response = self.sock.recv(1024)
+            response = response.decode('utf-8')
+
+            if(response == ERR_CODE):
+                error = self.send_command(b'LASTERR')
+                return "Remote command executed with errors.\n\n%s" % error
 
             return response
+
         except socket.error as e:
             print("Failed to send command. Error: %s" % e)
             sys.exit()
@@ -57,10 +65,18 @@ def main():
 
     cmd_parser.add_argument('command', choices=[
         'backup',
+        'backward',
+        'erase',
         'exit',
+        'help',
+        'lerror',
         'list',
         'rewind',
-        'status'])
+        'status',
+        'toward',
+        'wind'])
+
+    cmd_parser.add_argument('param', nargs='?', default=1, type=int)
 
     client = Client()
     client.connect(args.host, args.port)
@@ -80,23 +96,49 @@ def main():
             bdir = client.send_command(b'GETBDIR')
             cmd = input("Backup directory on server [%s]: " % bdir)
             if(cmd):
-                print(client.send_command(bytes('BACKUPSPECDIR %s'.encode('utf-8') % bdir)))
+                print(client.send_command(
+                    bytes('BACKUPSPECDIR %s %s' % (cmd, cmd), 'utf-8')))
             else:
                 print(client.send_command(b'BACKUP'))
-
-
+        elif iargs.command == 'backward':
+            print(client.send_command(
+                bytes('BACKWARD %s' % iargs.param, 'utf-8')))
+        elif iargs.command == 'erase':
+            cmd = input(
+                "Erase can take a lot of time, "
+                "do you want to continue [Y/n]? ")
+            if(cmd == "" or cmd == "Y" or cmd == "y"):
+                print(client.send_command(b'ERASE'))
+            else:
+                continue
+        elif iargs.command == 'lerror':
+            print(client.send_command(b'LASTERR'))
         elif iargs.command == 'list':
             print(client.send_command(b'LIST'))
         elif iargs.command == 'rewind':
-            print(client.send_command(b'REWIND'))
+            cmd = input(
+                "Do you wand to rewind tape to beginning-of-the-tape [Y/n]? ")
+            if(cmd == "" or cmd == "Y" or cmd == "y"):
+                print(client.send_command(b'REWIND'))
+            else:
+                continue
         elif iargs.command == 'status':
             print(client.send_command(b'STATUS'))
-
+        elif iargs.command == 'toward':
+            print(client.send_command(
+                bytes('TOWARD %s' % iargs.param, 'utf-8')))
+        elif iargs.command == 'wind':
+            cmd = input(
+                "Do you wand to wind tape to end-of-the-tape [Y/n]? ")
+            if(cmd == "" or cmd == "Y" or cmd == "y"):
+                print(client.send_command(b'WIND'))
+            else:
+                continue
         elif iargs.command == 'exit':
             client.disconnect()
             break
-        else:
-            print("Unknown command")
+        elif iargs.command == 'help':
+            cmd_parser.print_help()
             continue
 
         continue

@@ -9,21 +9,33 @@ import socket
 import subprocess
 import sys
 
+conf = {
+    'backup_dir': '/root',
+    'host': '',
+    'port': 50077,
+    'tape': '/dev/nst0'
+}
+
+ERR_CODE = b'0x01'
+
 
 class Server():
     def __init__(self):
-        self.backup_dir = "/root"
+        self.last_err = b' '
         # protocol commands
-        self.base_commands = {
-            'STATUS': 'mt status',
-            'LIST': 'tar tzv && mt bsf 2 && mt fsf',
-            'BACKUP': 'mt eom && tar czv %s -C %s' % (self.get_bdir(), self.get_bdir()),
-            'BACKUPSPECDIR': 'mt eom && tar czv {} -C {}',
-            'REWIND': 'mt rewind'
-        }
-
-        self.ext_commands = {
-            'GETBDIR': self.get_bdir(),
+        self.com = {
+            'BACKUP': ('shell', 'mt eom && tar czv %s -C %s' %
+                       (conf['backup_dir'], conf['backup_dir'])),
+            'BACKUPSPECDIR': ('shell', 'mt eom && tar czv {} -C {}'),
+            'BACKWARD': ('shell', 'mt bsf $(({}+1)) && mt fsf'),
+            'ERASE': ('shell', 'mt erase'),
+            'GETBDIR': ('value', bytes(conf['backup_dir'], 'utf-8')),
+            'LASTERR': ('funct', 'get_last_err'),
+            'LIST': ('shell', 'tar tzv && mt bsf 2 && mt fsf'),
+            'REWIND': ('shell', 'mt rewind'),
+            'STATUS': ('shell', 'mt status'),
+            'TOWARD': ('shell', 'mt fsf {}'),
+            'WIND': ('shell', 'mt eom && mt bsf 2 && mt fsf'),
         }
 
     def run(self, host, port):
@@ -62,42 +74,54 @@ class Server():
 
         sock.close()
 
+    def get_last_err(self):
+        return self.last_err
+
     def _exec(self, args):
-        command = None
+        if(args[0] in self.com):
+            # command type
+            c_type = self.com[args[0]][0]
+            # command value
+            c_val = self.com[args[0]][1]
 
-        if(args[0] in self.base_commands):
-            if(len(args) > 1):
-                command = self.base_commands[args[0]].format(*args[1::])
-            else:
-                command = self.base_commands[args[0]]
-
-            try:
-                proc = subprocess.Popen(command, shell=True,
-                                        stderr=subprocess.PIPE,
-                                        stdout=subprocess.PIPE)
-                if proc:
-                    out = proc.stdout.read()
-                    stderr = proc.stderr.read()
-                    if (stderr):
-                        out += stderr
-                    if(len(out) == 0):
-                        out = b'Done'
-
-                    return out
-            except OSError as e:
-                print('Could not start subprocess on server. Error: %s' % e)
-                return b'Could not start subprocess on server.'
-
-        elif(args[0] in self.ext_commands):
-            return bytes(self.ext_commands[args[0]].encode("utf-8"))
+            if(c_type == "shell" and len(args) == 1):
+                return self._shell(c_val)
+            elif(c_type == "shell" and len(args) > 1):
+                print(c_val.format(*args[1::]))
+                return self._shell(c_val.format(*args[1::]))
+            elif(c_type == "value"):
+                return c_val
+            elif(c_type == "funct"):
+                return getattr(self, c_val)()
         else:
-            return b'Server could not recognize command.'
+            self.last_err = b'Server could not recognize command.'
 
-    def set_backup_dir(self, path):
-        self.backup_dir = path
+            return ERR_CODE
 
-    def get_bdir(self):
-        return self.backup_dir
+    def _shell(self, command):
+        try:
+            proc = subprocess.Popen(command, shell=True,
+                                    stderr=subprocess.PIPE,
+                                    stdout=subprocess.PIPE)
+            if proc:
+                out = proc.stdout.read()
+                err = proc.stderr.read()
+
+                if(len(out) == 0 and len(err) == 0):
+                    out = b' '
+                elif(len(out) == 0 and len(err) > 0):
+                    self.last_err = err
+                    return ERR_CODE
+
+                return out
+
+        except OSError as e:
+            self.last_err = bytes(
+                'Could not start subprocess on server. Error: %s' % e, 'utf-8')
+
+            print(str(self.last_err))
+
+            return ERR_CODE
 
     def install(self):
         u = ("[Unit]\n"
@@ -122,36 +146,24 @@ class Server():
         except os.error as e:
             print('Could not install server as service. Error: %s' %
                   e, '\n\nTry to run from superuser.')
+            sys.exit()
 
 
 def main():
     parser = argparse.ArgumentParser(
         description='PyTape Server 2020 Sakharuk Alexander')
-    parser.add_argument('--dir', action='store',
-                        default='/root/',
-                        help='Listen on interfaces [default is /root/]')
-    parser.add_argument('--host', action='store',
-                        default='',
-                        help='Listen on interfaces [default is any]')
-    parser.add_argument('--port', action='store',
-                        default=50077,
-                        help='Run on port [default is 50077]')
-    parser.add_argument('--tape',
-                        default='/dev/nst0',
-                        help='Tape device [default is /dev/nst0]')
+
     parser.add_argument('--install', action='store_true',
                         help='Install server as systemd daemon')
     args = parser.parse_args()
 
     server = Server()
-    server.set_backup_dir(args.dir)
-
-    os.environ["TAPE"] = args.tape
+    os.environ["TAPE"] = conf['tape']
 
     if(args.install):
         server.install()
     else:
-        server.run(args.host, args.port)
+        server.run(conf['host'], conf['port'])
 
 
 if __name__ == "__main__":
