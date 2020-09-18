@@ -5,6 +5,7 @@
 
 import argparse
 import os
+import re
 import socket
 import subprocess
 import sys
@@ -16,27 +17,18 @@ conf = {
     'tape': '/dev/nst0'
 }
 
-ERR_CODE = b'0x01'
-
 
 class Server():
-    def __init__(self):
-        self.last_err = b' '
-        # protocol commands
-        self.com = {
-            'BACKUP': ('shell', 'mt eom && tar czv %s -C %s' %
-                       (conf['backup_dir'], conf['backup_dir'])),
-            'BACKUPSPECDIR': ('shell', 'mt eom && tar czv {} -C {}'),
-            'BACKWARD': ('shell', 'mt bsf $(({}+1)) && mt fsf'),
-            'ERASE': ('shell', 'mt erase'),
-            'GETBDIR': ('value', bytes(conf['backup_dir'], 'utf-8')),
-            'LASTERR': ('funct', 'get_last_err'),
-            'LIST': ('shell', 'tar tzv && mt bsf 2 && mt fsf'),
-            'REWIND': ('shell', 'mt rewind'),
-            'STATUS': ('shell', 'mt status'),
-            'TOWARD': ('shell', 'mt fsf {}'),
-            'WIND': ('shell', 'mt eom && mt bsf 2 && mt fsf'),
-        }
+    commands = {
+        b'BACKUP': '_c_backup',
+        b'BACKWARD': '_c_backward',
+        b'ERASE': '_c_erase',
+        b'LIST': '_c_list',
+        b'REWIND': '_c_rewind',
+        b'STATUS': '_c_status',
+        b'TOWARD': '_c_toward',
+        b'WIND': '_c_wind'
+    }
 
     def run(self, host, port):
         # Create an AF_INET, STREAM socket (TCP)
@@ -67,36 +59,20 @@ class Server():
                 if not data:
                     break
 
-                args = data.decode('utf-8').split()
+                # args = data.decode('utf-8').split()
+                args = data.split()
                 response = self._exec(args)
 
                 conn.sendall(response)
 
         sock.close()
 
-    def get_last_err(self):
-        return self.last_err
-
     def _exec(self, args):
-        if(args[0] in self.com):
-            # command type
-            c_type = self.com[args[0]][0]
-            # command value
-            c_val = self.com[args[0]][1]
-
-            if(c_type == "shell" and len(args) == 1):
-                return self._shell(c_val)
-            elif(c_type == "shell" and len(args) > 1):
-                print(c_val.format(*args[1::]))
-                return self._shell(c_val.format(*args[1::]))
-            elif(c_type == "value"):
-                return c_val
-            elif(c_type == "funct"):
-                return getattr(self, c_val)()
+        if(args[0] in self.commands):
+            # run command handler
+            return getattr(self, self.commands[args[0]])(args)
         else:
-            self.last_err = b'Server could not recognize command.'
-
-            return ERR_CODE
+            return b'Server could not recognize command.'
 
     def _shell(self, command):
         try:
@@ -104,24 +80,75 @@ class Server():
                                     stderr=subprocess.PIPE,
                                     stdout=subprocess.PIPE)
             if proc:
-                out = proc.stdout.read()
-                err = proc.stderr.read()
+                stdout = proc.stdout.read()
+                stderr = proc.stderr.read()
 
-                if(len(out) == 0 and len(err) == 0):
-                    out = b' '
-                elif(len(out) == 0 and len(err) > 0):
-                    self.last_err = err
-                    return ERR_CODE
-
-                return out
+                return stdout, stderr
 
         except OSError as e:
-            self.last_err = bytes(
+            err = bytes(
                 'Could not start subprocess on server. Error: %s' % e, 'utf-8')
 
-            print(str(self.last_err))
+            print(str(err))
 
-            return ERR_CODE
+            return '', err
+
+    #
+    # Command handlers
+    #
+
+    def _c_erase(self, args):
+        x = 'mt erase'
+        stdout, stderr = self._shell(x)
+
+        return stdout + stderr
+
+    def _c_backup(self, args):
+        x = 'mt eom && tar czv {} -C {}'.format(
+            conf['backup_dir'], conf['backup_dir'])
+        stdout, stderr = self._shell(x)
+
+        return stdout + stderr
+
+    def _c_backward(self, args):
+        x = 'mt bsf $(({}+1)) && mt fsf'.format(args[1].decode('utf-8'))
+        stdout, stderr = self._shell(x)
+
+        return stdout + stderr
+
+    def _c_list(self, args):
+        x = 'tar tzv && mt bsf 2 && mt fsf'
+        stdout, stderr = self._shell(x)
+
+        return stdout + stderr
+
+    def _c_rewind(self, args):
+        x = 'mt rewind'
+        stdout, stderr = self._shell(x)
+
+        return stdout + stderr
+
+    def _c_status(self, args):
+        x = 'mt status'
+        stdout, stderr = self._shell(x)
+
+        return stdout + stderr
+
+    def _c_toward(self, args):
+        x = 'mt fsf {}'.format(args[1].decode('utf-8'))
+        stdout, stderr = self._shell(x)
+
+        return stdout + stderr
+
+    def _c_wind(self, args):
+        x = 'mt eom && mt bsf 2 && mt fsf'
+        stdout, stderr = self._shell(x)
+
+        return stdout + stderr
+
+    #
+    # Systemd Installer
+    #
 
     def install(self):
         u = ("[Unit]\n"
