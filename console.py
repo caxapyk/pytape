@@ -13,7 +13,7 @@ class IConsole():
                                   default=[1],
                                   help="Go to COUNT records backward, default COUNT is 1")
         # config
-        self.c_parser.add_command('config', b'BACKWARD', nargs=0,
+        self.c_parser.add_command('config', b'CONFIG', nargs=0,
                                   help="Show server configuration")
         # erase
         self.c_parser.add_command('erase', b'ERASE', nargs=0,
@@ -45,7 +45,7 @@ class IConsole():
 
         # external commands
         self.c_parser.add_external_command('connect', help="Connect to server")
-        self.c_parser.add_external_command('exit', help="Exit programm")
+        self.c_parser.add_external_command('exit', help="Exit the programm")
 
     def run(self):
         """ Start interactive console"""

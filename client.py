@@ -90,4 +90,4 @@ class Client():
     def _c_exit(self):
         if self.__is_connected:
             self.__disconnect()
-            sys.exit()
+        sys.exit()

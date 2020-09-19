@@ -19,16 +19,18 @@ conf = {
 
 
 class Server():
-    commands = {
-        b'BACKUP': '_c_backup',
-        b'BACKWARD': '_c_backward',
-        b'ERASE': '_c_erase',
-        b'LIST': '_c_list',
-        b'REWIND': '_c_rewind',
-        b'STATUS': '_c_status',
-        b'TOWARD': '_c_toward',
-        b'WIND': '_c_wind'
-    }
+    def __init__(self):
+        self.__commands = {
+            b'BACKUP': '_c_backup',
+            b'BACKWARD': '_c_backward',
+            b'CONFIG': '_c_config',
+            b'ERASE': '_c_erase',
+            b'LIST': '_c_list',
+            b'REWIND': '_c_rewind',
+            b'STATUS': '_c_status',
+            b'TOWARD': '_c_toward',
+            b'WIND': '_c_wind'
+        }
 
     def run(self, host, port):
         # Create an AF_INET, STREAM socket (TCP)
@@ -68,9 +70,9 @@ class Server():
         sock.close()
 
     def _exec(self, args):
-        if(args[0] in self.commands):
+        if args[0] in self.__commands:
             # run command handler
-            return getattr(self, self.commands[args[0]])(args)
+            return getattr(self, self.__commands[args[0]])(args)
         else:
             return b'Server could not recognize command.'
 
@@ -115,6 +117,9 @@ class Server():
         stdout, stderr = self._shell(x)
 
         return stdout + stderr
+
+    def _c_config(self, args):
+        return bytes(str(conf), 'utf-8')
 
     def _c_list(self, args):
         x = 'tar tzv && mt bsf 2 && mt fsf'
@@ -187,7 +192,7 @@ def main():
     server = Server()
     os.environ["TAPE"] = conf['tape']
 
-    if(args.install):
+    if args.install:
         server.install()
     else:
         server.run(conf['host'], conf['port'])
