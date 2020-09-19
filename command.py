@@ -5,38 +5,41 @@
 
 
 class Command():
-    def __init__(self, name, value, nargs='?', default=None, question=None, ctype=str):
-        self.c_handler = {
-            'default': default,
-            'question': question,
-            'name': name,
-            'nargs': nargs,
-            'value': value,
-            'ctype': ctype
-        }
+    def __init__(self, name, value, nargs='?', default=[], question=None, type=str, help=''):
+        self.__name = name
+        self.__value = value
+        self.__nargs = nargs
+        self.__default = default
+        self.__question = question
+        self.__type = type
+        self.__help = help
 
-        self.c_args = None
-
-    def name(self):
-        return self.c_handler['name']
-
-    def nargs(self):
-        return self.c_handler['nargs']
-
-    def default(self):
-        return self.c_handler['default']
-
-    def question(self):
-        return self.c_handler['question']
-
-    def value(self):
-        return self.c_handler['value']
-
-    def ctype(self):
-        return self.c_handler['ctype']
+        self.__c_args = b''
 
     def arguments(self):
-        return self.c_args
+        return self.__c_args
 
     def set_args(self, args):
-        self.c_args = args
+        if(args):
+            self.__c_args = bytes(' ' + str(args), 'utf-8')
+
+    def name(self):
+        return self.__name
+
+    def value(self):
+        return self.__value
+
+    def nargs(self):
+        return self.__nargs
+
+    def default(self):
+        return self.__default
+
+    def question(self):
+        return self.__question
+
+    def type(self):
+        return self.__type
+
+    def help(self):
+        return self.__help

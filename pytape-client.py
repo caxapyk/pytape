@@ -6,21 +6,29 @@
 import argparse
 
 from client import Client
+from console import IConsole
 
 
 def main():
+    client = Client()
+
     parser = argparse.ArgumentParser(
         description='PyTape Client 2020 Sakharuk Alexander')
-    parser.add_argument('-s', '--host', action='store',
-                        default='localhost', help='Server hostname')
+    parser.add_argument('-s', '--host', action='store', help='Server hostname')
     parser.add_argument('-p', '--port', action='store',
-                        default=50077, help='Server port')
+                        default=client.port(), help='Server port')
 
     args = parser.parse_args()
 
-    client = Client()
-    client.connect(args.host, args.port)
-    client.console()
+    if(args.host):
+        client.connect(args.host, int(args.port))
+
+    iconsole = IConsole()
+
+    # Main loop
+    while True:
+        command = iconsole.run()
+        client._exec(command)
 
 
 if __name__ == "__main__":
