@@ -7,6 +7,8 @@ import argparse
 
 from client import Client
 from console import IConsole
+from client_command import ClientCommand
+from remote_command import RemoteCommand
 
 
 def main():
@@ -28,7 +30,10 @@ def main():
     # Main loop
     while True:
         command = iconsole.run()
-        client._exec(command)
+        if isinstance(command, ClientCommand):
+            client._exec(command)
+        elif isinstance(command, RemoteCommand):
+            client.send(command)
 
 
 if __name__ == "__main__":

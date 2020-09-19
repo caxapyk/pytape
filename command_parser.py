@@ -6,40 +6,38 @@
 from command import Command
 
 
-class CommandParserExeption(Exception):
+class CommandParserException(Exception):
     pass
 
 
 class CommandParser():
     def __init__(self):
-        self.__commands = {}
+        self.__commands = []
 
-    def add_command(self, name, value, nargs='?', default=[], question=None, type=str, help=''):
-        if (isinstance(nargs, str)) and (nargs != '?'):
-            raise CommandParserExeption(
-                "Parameter nargs must be a number or ?.")
-        if not isinstance(default, list):
-            raise CommandParserExeption(
-                "Parameter default must be a list type.")
-        if not type in (int, str):
-            raise CommandParserExeption(
-                "Unknown type. Only strings and integers are allowed.")
+    # def add_command(self, name, value, nargs='?', default=[], question=None, type=str, help=''):
+    #    self.__commands[name] = Command(
+    #        name, value, nargs, default, question, type, help)
 
-        self.__commands[name] = Command(
-            name, value, nargs, default, question, type, help)
-
-    def add_external_command(self, name, help=''):
-        """ Exteranal commands will just be returned to console """
-        self.add_command(name, bytes(name, 'utf-8'), nargs=0, help=help)
+    def add_command(self, command):
+        if not isinstance(command, Command):
+            raise CommandParserException(
+                "Command should be an isinstance of Command Class")
+        self.__commands.append(command)
 
     def contains(self, name):
-        return name in self.__commands
+        for command in self.__commands:
+            if command.name() == name:
+                return True
+
+        return False
 
     def get(self, name):
-        if name in self.__commands:
-            return self.__commands[name]
+        if self.contains(name):
+            for command in self.__commands:
+                if command.name() == name:
+                    return command
 
-        return Command()
+        return None
 
     def parse(self, input):
         if not input:
@@ -61,7 +59,7 @@ class CommandParser():
 
             self.validate_args(command, c_args)
 
-            # append arguments to command value
+            # set arguments string to command
             command.set_args(' '.join(str(a) for a in c_args))
 
             return command
@@ -69,22 +67,22 @@ class CommandParser():
             self.print_help()
             return None
         else:
-            raise CommandParserExeption("Unknown command %s." % iargs[0])
+            raise CommandParserException("Unknown command %s." % iargs[0])
 
     def validate_args(self, command, args):
         if isinstance(command.nargs(), str):
             if len(args) > 1:  # nargs='?'
-                raise CommandParserExeption(
+                raise CommandParserException(
                     "Too many arguments. Only one argument may be passed.")
         elif isinstance(command.nargs(), int):
             if len(args) > command.nargs():
-                raise CommandParserExeption("Too many arguments. "
-                                            "Command requires %s argument(s)" %
-                                            command.nargs())
+                raise CommandParserException("Too many arguments. "
+                                             "Command requires %s argument(s)" %
+                                             command.nargs())
             elif len(args) < command.nargs():
-                raise CommandParserExeption("Too few arguments. "
-                                            "Command requires %s argument(s)" %
-                                            command.nargs())
+                raise CommandParserException("Too few arguments. "
+                                             "Command requires %s argument(s)" %
+                                             command.nargs())
 
         # check arguments types
         i = 0
@@ -93,14 +91,12 @@ class CommandParser():
                 try:
                     int(args[i])
                 except ValueError:
-                    raise CommandParserExeption(
+                    raise CommandParserException(
                         "Type of argument %s should be a number." % (i + 1))
             i += 1
 
     def print_help(self):
-        for name in self.__commands:
-            command = self.get(name)
-
+        for command in self.__commands:
             print(
                 "{command}\t\t{help}".format(
                     command=command.name(), help=command.help()))
