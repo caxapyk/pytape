@@ -79,3 +79,6 @@ class IConsole():
                 return command
 
             continue
+
+    def print(self, value):
+      print(value)
