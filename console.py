@@ -1,3 +1,6 @@
+import asyncio
+import sys
+
 from command_parser import CommandParser, CommandParserException
 from client_command import ClientCommand
 from remote_command import RemoteCommand
@@ -21,15 +24,32 @@ class IConsole():
         self.c_parser.add_command(
             RemoteCommand('config', b'CONFIG', nargs=0,
                           help="Show server configuration"))
-        # erase
+        # eject
         self.c_parser.add_command(
-            RemoteCommand('erase', b'ERASE', nargs=0,
+            RemoteCommand('eject', b'ERASE', nargs=0,
                           question="Erase can take a lot of time, do you want to continue",
-                          help="Erase tape"))
+                          help="Erase the tape"))
+
+        # eject
+        self.c_parser.add_command(
+            RemoteCommand('erase', b'EJECT', nargs=0,
+                          question="Do you want to eject the tape?",
+                          help="Eject the tape"))
+        # error
+        self.c_parser.add_command(
+            RemoteCommand('error', b'LASTERR', nargs=0,
+                          help="Show last server error"))
+
         # list
         self.c_parser.add_command(
             RemoteCommand('list', b'LIST', nargs=0,
                           help="Show files on current record"))
+
+        # record
+        self.c_parser.add_command(
+            RemoteCommand('record', b'RECORD', nargs=0,
+                          help="Show current record number"))
+
         # rewind
         self.c_parser.add_command(
             RemoteCommand('rewind', b'REWIND', nargs=0,
@@ -60,7 +80,7 @@ class IConsole():
     def run(self):
         """ Start interactive console"""
         while True:
-            cmd = input("> ")
+            cmd = input("\n> ")
             if len(cmd) > 0:
                 try:
                     command = self.c_parser.parse(cmd)
@@ -80,5 +100,22 @@ class IConsole():
 
             continue
 
-    def print(self, value):
-      print(value)
+    def printf(self, value):
+        print("\r{}".format(value), end='', flush=True)
+
+    async def print_wait(self, depended, value="Please wait"):
+        i = 0
+        dots = 5
+        while not depended.done():
+            count = i % (dots + 2)
+            end = '.' * count + '\r'
+
+            if count == (dots + 1):
+                end = ' ' * (dots + 2) + '\r'
+
+            print("\r{}".format(value), end=end, flush=True)
+            await asyncio.sleep(0.75)
+            i += 1
+
+        # clear output
+        print("%s" % ' ' * (len(value) + dots), end='\r', flush=True)

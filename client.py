@@ -23,10 +23,6 @@ class Client():
         self.__port = 50077
 
         self.__is_connected = False
-
-        self.__reader = None
-        self.__writer = None
-
         self.__iconsole = IConsole()
 
     async def run(self, host=None, port=None):
@@ -41,31 +37,30 @@ class Client():
             if isinstance(command, ClientCommand):
                 await self._exec(command)
             elif isinstance(command, RemoteCommand):
-                await self.send(command)
+                response = await self.send(command)
+                if response:
+                    self.__iconsole.printf(response.decode())
 
     async def connect(self, host, port):
         try:
-            self.__reader, self.__writer = await asyncio.open_connection(
+            reader, writer = await asyncio.open_connection(
                 host, int(port))
 
-            self.__writer.write(b'HELLO')
-            response = await self.__reader.read(64)
-            self.__writer.close()
+            writer.write(b'HELLO')
+            response = await reader.read(64)
+            writer.close()
 
             if response == b'HELLO':
                 self.__is_connected = True
-                self.__iconsole.print("Connection established!")
+                self.__iconsole.printf("Connection established!")
 
         except socket.error as e:
-            self.__iconsole.print("Failed to create connection (%s:%s). "
-                  "Error: %s" % (host, port, e))
+            self.__is_connected = False
+            self.__iconsole.printf("Failed to create connection (%s:%s). "
+                                  "Error: %s" % (host, port, e))
         except ValueError:
-            self.__iconsole.print("Connection error. Port must be 0-65535.")
-
-    async def _exec(self, command):
-        await getattr(
-            self, self.__internal_commands[command.value()])(
-            command.arguments())
+            self.__is_connected = False
+            self.__iconsole.printf("Connection error. Port must be 0-65535.")
 
     async def send(self, command):
         if self.__is_connected:
@@ -74,17 +69,30 @@ class Client():
                 if len(command.arguments()) > 0:
                     statement += b' ' + command.arguments()
 
-                self.__reader, self.__writer = await asyncio.open_connection(self.__hostname, self.__port)
+                reader, writer = await asyncio.open_connection(
+                    self.__hostname, self.__port)
 
-                self.__writer.write(statement)
-                response = await self.__reader.read(8192)
+                writer.write(statement)
+                response = asyncio.create_task(reader.read(8192))
+                read = asyncio.create_task(
+                    self.__iconsole.print_wait(response))
 
-                self.__iconsole.print(response)
+                await response
+                await read
+
+                return response.result()
 
             except socket.gaierror as e:
-                self.__iconsole.print("Failed to send command. Error: %s" % e)
+                self.__iconsole.printf("Socket address error. Error: %s" % e)
+            except OSError as e:
+                self.__iconsole.printf("Failed to send command. Error: %s" % e)
         else:
-            self.__iconsole.print("Not connected to server")
+            self.__iconsole.printf("Not connected to server")
+
+    async def _exec(self, command):
+        funct = getattr(
+            self, self.__internal_commands[command.value()])
+        await funct(command.arguments())
 
     # commands
 
@@ -94,7 +102,7 @@ class Client():
 
         if len(args) > 0:
             # try to split host:port
-            split = args.decode('utf-8').split(':')
+            split = args.decode().split(':')
             if len(split) == 2:
                 host = split[0]
                 port = split[1]
