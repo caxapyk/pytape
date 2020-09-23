@@ -72,19 +72,20 @@ class Server():
 
         print(f"Received {data!r} from {addr!r}")
 
-        args = data.split()
-        result = b''
+        try:
+            args = data.split()
+            if len(args) > 0 and args[0] in self.__commands:
+                # run command handler
+                result = await getattr(self, self.__commands[args[0]])(args)
+            else:
+                result = 'Server could not recognize a command.'
 
-        if args[0] in self.__commands:
-            # run command handler
-            result = await getattr(self, self.__commands[args[0]])(args)
-        else:
-            result = b'Server could not recognize command.'
+            writer.write(result.encode())
+            await writer.drain()
 
-        writer.write(result.encode())
-        await writer.drain()
-
-        writer.close()
+            writer.close()
+        except ConnectionResetError:
+            print(f"Connection to {addr!r} has been lost.")
 
     async def _execute(self, cmd):
         try:
@@ -149,9 +150,10 @@ class Server():
             return 'Could not make backup.'
 
         complete_time = time.time()
-        completed_dt = datetime.datetime.fromtimestamp(complete_time)
-        completed_human = f"{completed_dt:%Y-%m-%d %H:%M:%S}"
         total_time = round((complete_time - start_time), 2)
+
+        completed_dt = datetime.datetime.fromtimestamp(complete_time)
+        completed_human = f"{completed_dt:%d-%m-%Y %H:%M:%S}"
 
         time_metrics = 'sec'
         if total_time / 60 > 1:

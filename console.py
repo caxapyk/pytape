@@ -27,8 +27,8 @@ class IConsole():
         # erase
         self.c_parser.add_command(
             RemoteCommand('erase', b'ERASE', nargs=0,
-                          question="Erase can take a lot of time, do you want to continue",
-                          help="Erase the tape"))
+                          question="Erase can take a lot of time (~2.5hours), do you want to continue",
+                          help="Erase the tape from current record"))
 
         # eject
         self.c_parser.add_command(
