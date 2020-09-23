@@ -80,6 +80,8 @@ class Client():
                 await response
                 await read
 
+                writer.close()
+
                 return response.result()
 
             except socket.gaierror as e:
