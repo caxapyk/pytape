@@ -5,17 +5,24 @@
 
 import asyncio
 import argparse
+import datetime
 import os
 import re
+import smtplib
 import socket
 import subprocess
 import sys
+import time
 
 conf = {
-    'backup_dir': '/root',
+    'backup_dir': '/srv/nfs4/tape',
     'host': '',
     'port': 50077,
-    'tape': '/dev/nst0'
+    'tape': '/dev/nst0',
+    'mail_smtp_host': 'smtp.mail.ru',
+    'mail_smtp_port': '465',
+    'mail_from': 'proxima@gaorel.ru',
+    'mail_to': 'sakharuk@gaorel.ru'
 }
 
 
@@ -36,6 +43,8 @@ class Server():
             b'TOWARD': '_c_toward',
             b'WIND': '_c_wind'
         }
+
+        self.__smtp_pass = "e=KX30dujWnH"
 
         self.__last_error = b''
 
@@ -122,6 +131,8 @@ class Server():
         if len(args) > 1:
             path = args[1].decode()
 
+        start_time = time.time()
+
         x = 'mt eom && tar czv -C "$(dirname {})" $(basename {}) && (mt bsf 2 && mt fsf)'.format(
             path, path)
         stdout, stderr = await self._execute(x)
@@ -129,6 +140,24 @@ class Server():
         if stderr:
             self.__last_error = stderr.decode()
             return 'Could not make backup.'
+
+        complete_time = time.time()
+        completed_dt = datetime.datetime.fromtimestamp(complete_time)
+        completed_human = f"{completed_dt:%Y-%m-%d %H:%M:%S}"
+        total_time = round((complete_time - start_time), 2)
+
+        time_metrics = 'sec'
+        if total_time / 60 > 1:
+            time_metrics = 'min'
+
+        # send email when backup done
+        content = "Backup completed in {total}{metrics}.\nPath: {path}\nComplete time: {complete}".format(
+            total=total_time,
+            metrics=time_metrics,
+            path=path,
+            complete=completed_human)
+
+        self.sendmail(content, 'Backup competed')
 
         return 'Backup competed.'
 
@@ -252,6 +281,18 @@ class Server():
             print('Could not install server as service. Error: %s' %
                   e, '\n\nTry to run from superuser.')
             sys.exit()
+
+    def sendmail(self, content, subject=''):
+        try:
+            message = 'Subject: {}\n\n{}'.format(subject, content)
+            with smtplib.SMTP_SSL(
+                conf['mail_smtp_host'], conf['mail_smtp_port']) as server:
+                server.login(conf['mail_from'], self.__smtp_pass)
+                server.sendmail(conf['mail_from'], conf['mail_to'], message)
+                server.quit()
+
+        except Exception as e:
+            print('Could not send email. Error: %s' % e)
 
 
 def main():
