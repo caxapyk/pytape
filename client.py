@@ -30,7 +30,14 @@ class Client():
             self.__port = port
         if host:
             self.__hostname = host
-            await self.connect(host, self.__port)
+            conn = self.connect(host, self.__port)
+
+            try:
+                # Wait for 3 seconds, then raise TimeoutError
+                await asyncio.wait_for(conn, timeout=5)
+            except asyncio.TimeoutError:
+                print("Connection timeout")
+                sys.exit(1)
 
         while True:
             command = self.__iconsole.run()
@@ -73,7 +80,7 @@ class Client():
                     self.__hostname, self.__port)
 
                 writer.write(statement)
-                response = asyncio.create_task(reader.read(8192))
+                response = asyncio.create_task(reader.read(65536))
                 read = asyncio.create_task(
                     self.__iconsole.print_wait(response))
 

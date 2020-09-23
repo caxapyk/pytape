@@ -12,27 +12,27 @@ class IConsole():
         # backup
         self.c_parser.add_command(
             RemoteCommand('backup', b'BACKUP', nargs='?',
-                          help="Backup directory to tape "
-                          "in append mode"))
+                          help="Backup PATH on the tape in append mode, "
+                          "default PATH is configured on server"))
         # backward
         self.c_parser.add_command(
             RemoteCommand('backward', b'BACKWARD', nargs='?',
                           default=[1],
                           type=int,
-                          help="Go to COUNT records backward, default COUNT is 1"))
+                          help="Go to COUNT records backward, default COUNT=1"))
         # config
         self.c_parser.add_command(
             RemoteCommand('config', b'CONFIG', nargs=0,
                           help="Show server configuration"))
-        # eject
+        # erase
         self.c_parser.add_command(
-            RemoteCommand('eject', b'ERASE', nargs=0,
+            RemoteCommand('erase', b'ERASE', nargs=0,
                           question="Erase can take a lot of time, do you want to continue",
                           help="Erase the tape"))
 
         # eject
         self.c_parser.add_command(
-            RemoteCommand('erase', b'EJECT', nargs=0,
+            RemoteCommand('eject', b'EJECT', nargs=0,
                           question="Do you want to eject the tape?",
                           help="Eject the tape"))
         # error
@@ -49,6 +49,12 @@ class IConsole():
         self.c_parser.add_command(
             RemoteCommand('record', b'RECORD', nargs=0,
                           help="Show current record number"))
+        # restore
+        self.c_parser.add_command(
+            RemoteCommand('restore', b'RESTORE', nargs='?',
+                          question="Do you want to restore current record",
+                          help="Restore current record to the PATH, "
+                          "default PATH is configured on server"))
 
         # rewind
         self.c_parser.add_command(
@@ -64,7 +70,7 @@ class IConsole():
             RemoteCommand('toward', b'TOWARD', nargs='?',
                           default=[1],
                           type=int,
-                          help="Go to COUNT records toward, default COUNT is 1"))
+                          help="Go to COUNT records toward, default COUNT=1"))
         # wind
         self.c_parser.add_command(
             RemoteCommand('wind', b'WIND', nargs=0,

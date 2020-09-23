@@ -15,14 +15,14 @@ import sys
 import time
 
 conf = {
-    'backup_dir': '/srv/nfs4/tape',
+    'work_dir': '/srv/nfs4/tape',
     'host': '',
     'port': 50077,
     'tape': '/dev/nst0',
     'mail_smtp_host': 'smtp.mail.ru',
     'mail_smtp_port': '465',
     'mail_from': 'proxima@gaorel.ru',
-    'mail_to': 'sakharuk@gaorel.ru'
+    'mail_to': 'fateev@gaorel.ru'
 }
 
 
@@ -38,6 +38,7 @@ class Server():
             b'LASTERR': '_c_lasterr',
             b'LIST': '_c_list',
             b'RECORD': '_c_record',
+            b'RESTORE': '_c_restore',
             b'REWIND': '_c_rewind',
             b'STATUS': '_c_status',
             b'TOWARD': '_c_toward',
@@ -127,9 +128,15 @@ class Server():
         return 'Tape has been erased.'
 
     async def _c_backup(self, args):
-        path = conf['backup_dir']
+        path = conf['work_dir']
         if len(args) > 1:
-            path = args[1].decode()
+            tmp_path = args[1].decode()
+            if os.path.exists(tmp_path):
+                path = tmp_path
+            else:
+                err = 'Could not make backup. Directory {} does not exists.'.format(tmp_path)
+                self.__last_error = err
+                return err
 
         start_time = time.time()
 
@@ -151,13 +158,14 @@ class Server():
             time_metrics = 'min'
 
         # send email when backup done
-        content = "Backup completed in {total}{metrics}.\nPath: {path}\nComplete time: {complete}".format(
+        content = "Backup on the tape completed in {total}{metrics}.\n"
+        "Directory: {path}\nCompleted at: {complete}".format(
             total=total_time,
             metrics=time_metrics,
             path=path,
             complete=completed_human)
 
-        self.sendmail(content, 'Backup competed')
+        self.sendmail(content, 'Backup completed')
 
         return 'Backup competed.'
 
@@ -208,6 +216,26 @@ class Server():
         if stderr:
             self.__last_error = stderr.decode()
             return 'Could not get record number.'
+
+    async def _c_restore(self, args):
+        path = conf['work_dir']
+        if len(args) > 1:
+            tmp_path = args[1].decode()
+            if os.path.exists(tmp_path):
+                path = tmp_path
+            else:
+                err = 'Could not restore record. Directory {} does not exists.'.format(tmp_path)
+                self.__last_error = err
+                return err
+
+        x = 'tar xzv -C {}'.format(path)
+        stdout, stderr = await self._execute(x)
+
+        if stderr:
+            self.__last_error = stderr.decode()
+            return 'Could not restore record.'
+
+        return stdout.decode() + '\nRestore completed.'
 
     async def _c_rewind(self, args):
         x = 'mt rewind'
