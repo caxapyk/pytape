@@ -36,11 +36,14 @@ class Client():
         self.__is_connected = False
 
         self.__parser = CommandParser()
+
+        # about
+        self.__parser.add_command(
+            ClientCommand('about', b'about', help="About the programm"))
         # backup
         self.__parser.add_command(
             RemoteCommand('backup', b'BACKUP', nargs='?',
-                          help="Backup PATH on the tape in append mode, "
-                          "default PATH is configured on server"))
+                          help="Backup PATH on the tape (append mode)"))
         # backward
         self.__parser.add_command(
             RemoteCommand('backward', b'BACKWARD', nargs='?',
@@ -51,10 +54,15 @@ class Client():
         self.__parser.add_command(
             RemoteCommand('config', b'CONFIG', nargs=0,
                           help="Show server configuration"))
+
+        # connect
+        self.__parser.add_command(
+            ClientCommand('connect', b'connect', help="Connect to server"))
+
         # erase
         self.__parser.add_command(
             RemoteCommand('erase', b'ERASE', nargs=0,
-                          question="Erase can take a lot of time (~2.5hours), do you want to continue",
+                          question="Erase can take a lot of time (up to ~2.5hours), do you want to continue",
                           help="Erase the tape from current record"))
 
         # eject
@@ -66,6 +74,10 @@ class Client():
         self.__parser.add_command(
             RemoteCommand('error', b'LASTERR', nargs=0,
                           help="Show last server error"))
+
+        # exit
+        self.__parser.add_command(
+            ClientCommand('exit', b'exit', help="Exit the programm"))
 
         # list
         self.__parser.add_command(
@@ -80,8 +92,7 @@ class Client():
         self.__parser.add_command(
             RemoteCommand('restore', b'RESTORE', nargs='?',
                           question="Do you want to restore current record",
-                          help="Restore current record to the PATH, "
-                          "default PATH is configured on server"))
+                          help="Restore current record to the PATH"))
 
         # rewind
         self.__parser.add_command(
@@ -103,14 +114,6 @@ class Client():
             RemoteCommand('wind', b'WIND', nargs=0,
                           question="Do you wand to wind tape to end-of-the-tape",
                           help="Wind to end-of-the-tape (EOT)"))
-
-        # client commands
-        self.__parser.add_command(
-            ClientCommand('about', b'about', help="About programm"))
-        self.__parser.add_command(
-            ClientCommand('connect', b'connect', help="Connect to server"))
-        self.__parser.add_command(
-            ClientCommand('exit', b'exit', help="Exit the programm"))
 
         self.__iconsole = IConsole()
         self.__iconsole.set_command_parser(self.__parser)

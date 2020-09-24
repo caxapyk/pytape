@@ -23,7 +23,7 @@ conf = {
     'mail_smtp_host': 'smtp.mail.ru',
     'mail_smtp_port': '465',
     'mail_from': 'proxima@gaorel.ru',
-    'mail_to': 'fateev@gaorel.ru'
+    'mail_to': 'sakharuk@gaorel.ru'
 }
 
 
@@ -161,8 +161,7 @@ class Server():
             time_metrics = 'min'
 
         # send email when backup done
-        content = "Backup on the tape completed in {total}{metrics}.\n"
-        "Directory: {path}\nCompleted at: {complete}".format(
+        content = "Backup on the tape completed in {total}{metrics}.\nDirectory: {path}\nCompleted at: {complete}".format(
             total=total_time,
             metrics=time_metrics,
             path=path,
