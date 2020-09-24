@@ -15,10 +15,11 @@ import sys
 import time
 
 conf = {
-    'work_dir': '/srv/nfs4/tape',
+    'work_dir': '/srv/nfs4/tape/',
     'host': '',
     'port': 50077,
     'tape': '/dev/nst0',
+    'notify': True,
     'mail_smtp_host': 'smtp.mail.ru',
     'mail_smtp_port': '465',
     'mail_from': 'proxima@gaorel.ru',
@@ -132,8 +133,8 @@ class Server():
         path = conf['work_dir']
         if len(args) > 1:
             tmp_path = args[1].decode()
-            if os.path.exists(tmp_path):
-                path = tmp_path
+            if self.is_workdir_exists(tmp_path):
+                path += tmp_path
             else:
                 err = 'Could not make backup. Directory {} does not exists.'.format(tmp_path)
                 self.__last_error = err
@@ -167,7 +168,8 @@ class Server():
             path=path,
             complete=completed_human)
 
-        self.sendmail(content, 'Backup completed')
+        if conf['notify']:
+            await self.sendmail(content, 'Backup completed')
 
         return 'Backup competed.'
 
@@ -223,8 +225,8 @@ class Server():
         path = conf['work_dir']
         if len(args) > 1:
             tmp_path = args[1].decode()
-            if os.path.exists(tmp_path):
-                path = tmp_path
+            if self.is_workdir_exists(tmp_path):
+                path += tmp_path
             else:
                 err = 'Could not restore record. Directory {} does not exists.'.format(tmp_path)
                 self.__last_error = err
@@ -312,7 +314,7 @@ class Server():
                   e, '\n\nTry to run from superuser.')
             sys.exit()
 
-    def sendmail(self, content, subject=''):
+    async def sendmail(self, content, subject=''):
         try:
             message = 'Subject: {}\n\n{}'.format(subject, content)
             with smtplib.SMTP_SSL(
@@ -323,6 +325,11 @@ class Server():
 
         except Exception as e:
             print('Could not send email. Error: %s' % e)
+
+    def is_workdir_exists(self, path):
+        if os.path.exists(conf['work_dir'] + path):
+            return True
+        return False
 
 
 def main():
