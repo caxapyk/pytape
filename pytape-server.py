@@ -48,7 +48,7 @@ class Server():
 
         self.__smtp_pass = "e=KX30dujWnH"
 
-        self.__last_error = b''
+        self.__last_error = ''
 
     async def run(self):
         try:
@@ -295,7 +295,7 @@ class Server():
              "\n"
              "[Service]\n"
              "\n"
-             "ExecStart=/usr/bin/python3 '%s/pytape-server.py' --run\n"
+             "ExecStart=/usr/bin/python3 '%s/pytape-server.py'\n"
              "ExecReload=/bin/kill -s HUP $MAINPID\n"
              "ExecStop=/bin/kill -s QUIT $MAINPID\n"
              "TimeoutSec=30\n"

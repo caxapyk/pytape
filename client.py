@@ -174,7 +174,7 @@ class Client():
                     self.__hostname, self.__port)
 
                 writer.write(statement)
-                response = asyncio.create_task(reader.read(65536))
+                response = asyncio.create_task(reader.read(-1))
                 read = asyncio.create_task(
                     self.__iconsole.print_wait(response))
 
