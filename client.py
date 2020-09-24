@@ -121,11 +121,8 @@ class Client():
     async def run(self, host=None, port=None):
         self.__iconsole.printf(self.__pytape)
 
-        if port:
-            self.__port = port
-        if host:
-            self.__hostname = host
-            conn = self.connect(host, self.__port)
+        if host and port:
+            conn = self.connect(host, port)
 
             try:
                 # Wait for 3 seconds, then raise TimeoutError
@@ -154,6 +151,8 @@ class Client():
 
             if response == b'HELLO':
                 self.__is_connected = True
+                self.__hostname = host
+                self.__port = port
                 self.__iconsole.printf("Connection established!")
 
         except socket.error as e:
@@ -221,8 +220,13 @@ class Client():
             if len(promt_port) > 0:
                 port = promt_port
 
-        port = int(port)
-        await self.connect(host, port)
+        conn = self.connect(host, port)
+        try:
+            # Wait for 3 seconds, then raise TimeoutError
+            await asyncio.wait_for(conn, timeout=5)
+        except asyncio.TimeoutError:
+            print("Connection timeout")
+            sys.exit(1)
 
     async def _c_exit(self, args):
         sys.exit()

@@ -14,7 +14,8 @@ def main():
         description='PyTape Client 2020 Sakharuk Alexander')
 
     parser.add_argument('-s', '--host', action='store', help='Server hostname')
-    parser.add_argument('-p', '--port', action='store', help='Server port')
+    parser.add_argument('-p', '--port', default=50077,
+                        action='store', help='Server port')
 
     args = parser.parse_args()
 
