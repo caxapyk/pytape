@@ -5,6 +5,7 @@
 
 import asyncio
 import argparse
+import sys
 
 from client import Client
 
@@ -16,10 +17,17 @@ def main():
     parser.add_argument('-s', '--host', action='store', help='Server hostname')
     parser.add_argument('-p', '--port', default=50077,
                         action='store', help='Server port')
+    parser.add_argument('-v', '--version', action='store_true',
+                        help='Print PyTape version')
 
     args = parser.parse_args()
 
     client = Client()
+
+    if args.version:
+        print(client.version)
+        sys.exit()
+
     asyncio.run(client.run(args.host, args.port))
 
 

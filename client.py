@@ -15,7 +15,8 @@ from remote_command import RemoteCommand
 
 class Client():
     def __init__(self):
-        self.__pytape = """
+        self.version = '1.0.20200904'
+        self.pytape = """
 ############################################################
 #                    WELLCOME TO PYTAPE                    #
 #    Client-Server GNU mt/tar utils wrapper to remote      #
@@ -24,10 +25,12 @@ class Client():
 ############################################################
 
             """
+
         self.__internal_commands = {
             b'about': '_c_about',
             b'connect': '_c_connect',
-            b'exit': '_c_exit'
+            b'exit': '_c_exit',
+            b'version': '_c_version'
         }
 
         self.__hostname = 'localhost'
@@ -109,6 +112,10 @@ class Client():
                           default=[1],
                           type=int,
                           help="Go to COUNT records toward, default COUNT=1"))
+        # version
+        self.__parser.add_command(
+            ClientCommand('version', b'version', help="Print PyTape version"))
+
         # wind
         self.__parser.add_command(
             RemoteCommand('wind', b'WIND', nargs=0,
@@ -119,7 +126,7 @@ class Client():
         self.__iconsole.set_command_parser(self.__parser)
 
     async def run(self, host=None, port=None):
-        self.__iconsole.printf(self.__pytape)
+        self.__iconsole.printf(self.pytape)
 
         if host and port:
             conn = self.connect(host, port)
@@ -228,9 +235,6 @@ class Client():
             print("Connection timeout")
             sys.exit(1)
 
-    async def _c_exit(self, args):
-        sys.exit()
-
     async def _c_about(self, args):
         self.__iconsole.printf("""
 Client-Server GNU mt/tar utils wrapper to remote backup, restore
@@ -238,4 +242,10 @@ and manage tape device in Linux, written on Python asyncio network module.
 
 Sakharuk Alexander, 2020 <saharuk.alexander@gmail.com>
 Licensed under GNU GENERAL PUBLIC LICENSE Version 3
-            """)
+""")
+
+    async def _c_exit(self, args):
+        sys.exit()
+
+    async def _c_version(self, args):
+        self.__iconsole.printf(self.version)
