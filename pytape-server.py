@@ -145,8 +145,7 @@ class Server():
 
         start_time = time.time()
 
-        x = 'mt eom && tar czv -C "$(dirname {})" $(basename {}) && (mt bsf 2 && mt fsf)'.format(
-            path, path)
+        x = 'mt eom && tar --exclude="restore" -cv -C "{}" . && (mt bsf 2 && mt fsf)'.format(path)
         stdout, stderr = await self._execute(x)
 
         if stderr:
@@ -160,8 +159,6 @@ class Server():
         completed_human = f"{completed_dt:%d-%m-%Y %H:%M:%S}"
 
         time_metrics = 'sec'
-        if total_time / 60 > 1:
-            time_metrics = 'min'
 
         # send email when backup done
         msg = "Backup on the tape completed in {total} {metrics}.\nDirectory: {path}\nCompleted at: {complete}".format(
@@ -196,7 +193,7 @@ class Server():
         return self.__last_error
 
     async def _c_list(self, args):
-        x = 'tar tzv && mt bsf 2 && mt fsf'
+        x = 'tar tv && mt bsf 2 && mt fsf'
         stdout, stderr = await self._execute(x)
 
         if stdout and stderr:
@@ -223,15 +220,11 @@ class Server():
     async def _c_restore(self, args):
         path = conf['work_dir']
         if len(args) > 1:
-            tmp_path = args[1].decode()
-            if self.is_workdir_exists(tmp_path):
-                path += tmp_path
-            else:
-                err = 'Could not restore record. Directory {} does not exists.'.format(tmp_path)
-                self.__last_error = err
-                return err
+            path += args[1].decode()
+        else:
+            path += 'restore'
 
-        x = 'tar xzv -C {}'.format(path)
+        x = 'mkdir -p {} && tar xv -C {}'.format(path, path)
         stdout, stderr = await self._execute(x)
 
         if stderr:

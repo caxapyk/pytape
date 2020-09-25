@@ -46,6 +46,7 @@ class Client():
         # backup
         self.__parser.add_command(
             RemoteCommand('backup', b'BACKUP', nargs='?',
+                          question="Do you want to start backup now",
                           help="Backup PATH on the tape (append mode)"))
         # backward
         self.__parser.add_command(
