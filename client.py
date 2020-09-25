@@ -196,6 +196,7 @@ class Client():
                 self.__iconsole.printf("Socket address error. Error: %s" % e)
             except OSError as e:
                 self.__iconsole.printf("Failed to send command. Error: %s" % e)
+
         else:
             self.__iconsole.printf("Not connected to server")
 

@@ -28,7 +28,11 @@ def main():
         print(client.version)
         sys.exit()
 
-    asyncio.run(client.run(args.host, args.port))
+    try:
+        asyncio.run(client.run(args.host, args.port))
+    except KeyboardInterrupt:
+        print('\rInterrupted by user. Exit...')
+        sys.exit()
 
 
 if __name__ == "__main__":

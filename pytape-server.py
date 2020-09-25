@@ -88,6 +88,9 @@ class Server():
         except ConnectionResetError:
             print(f"Connection to {addr!r} has been lost.")
 
+            if conf['notify']:
+                await self.sendmail(result, 'PyTape Server notify')
+
     async def _execute(self, cmd):
         try:
             proc = subprocess.Popen(cmd, shell=True,
@@ -151,7 +154,7 @@ class Server():
             return 'Could not make backup.'
 
         complete_time = time.time()
-        total_time = round((complete_time - start_time), 2)
+        total_time = int((complete_time - start_time))
 
         completed_dt = datetime.datetime.fromtimestamp(complete_time)
         completed_human = f"{completed_dt:%d-%m-%Y %H:%M:%S}"
@@ -161,16 +164,13 @@ class Server():
             time_metrics = 'min'
 
         # send email when backup done
-        content = "Backup on the tape completed in {total}{metrics}.\nDirectory: {path}\nCompleted at: {complete}".format(
+        msg = "Backup on the tape completed in {total} {metrics}.\nDirectory: {path}\nCompleted at: {complete}".format(
             total=total_time,
             metrics=time_metrics,
             path=path,
             complete=completed_human)
 
-        if conf['notify']:
-            await self.sendmail(content, 'Backup completed')
-
-        return 'Backup competed.'
+        return msg
 
     async def _c_backward(self, args):
         count = args[1].decode()
