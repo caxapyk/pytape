@@ -193,7 +193,7 @@ class Server():
         return self.__last_error
 
     async def _c_list(self, args):
-        x = 'tar tv && mt bsf 2 && mt fsf'
+        x = 'tar tv && mt bsf && mt fsf'
         stdout, stderr = await self._execute(x)
 
         if stdout and stderr:
@@ -224,7 +224,7 @@ class Server():
         else:
             path += 'restore'
 
-        x = 'mkdir -p {} && tar xv -C {}'.format(path, path)
+        x = 'mkdir -p {} && tar xv -C {} && (mt bsf && mt fsf)'.format(path, path)
         stdout, stderr = await self._execute(x)
 
         if stderr:

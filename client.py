@@ -15,7 +15,7 @@ from remote_command import RemoteCommand
 
 class Client():
     def __init__(self):
-        self.version = '1.0.20200904'
+        self.version = '1.0.20200925'
         self.pytape = """
 ############################################################
 #                    WELLCOME TO PYTAPE                    #

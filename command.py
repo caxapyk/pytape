@@ -38,6 +38,7 @@ class Command():
         return self.__c_args
 
     def set_args(self, args):
+        self.__c_args = b''
         if(args):
             self.__c_args = bytes(str(args), 'utf-8')
 
