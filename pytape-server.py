@@ -266,7 +266,9 @@ class Server():
                 self.__last_error = stderr.decode()
                 return 'Could not go toward.'
 
-            return 'End of the tape has been reached.'
+            # go back if end of tape reached
+            await self._execute('mt bsf 2 && mt fsf')
+            return 'End of the tape has been reached. Going back on previous record.'
 
         return 'Winded on {} record(s)'.format(count)
 
