@@ -148,7 +148,11 @@ class Server():
         x = 'mt eom && tar --exclude="restore" -cv -C "{}" . && (mt bsf 2 && mt fsf)'.format(path)
         stdout, stderr = await self._execute(x)
 
-        if stderr:
+        msg = ""
+
+        if stdout or (stdout and stderr):
+            msg += stdout.decode()
+        elif stderr:
             self.__last_error = stderr.decode()
             return 'Could not make backup.'
 
@@ -161,7 +165,7 @@ class Server():
         time_metrics = 'sec'
 
         # send email when backup done
-        msg = "Backup on the tape completed in {total} {metrics}.\nDirectory: {path}\nCompleted at: {complete}".format(
+        msg += "\n\nBackup on the tape completed in {total} {metrics}.\nDirectory: {path}\nCompleted at: {complete}".format(
             total=total_time,
             metrics=time_metrics,
             path=path,
