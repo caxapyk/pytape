@@ -149,7 +149,6 @@ class Server():
         stdout, stderr = await self._execute(x)
 
         msg = ""
-
         if stdout or (stdout and stderr):
             msg += stdout.decode()
         elif stderr:
