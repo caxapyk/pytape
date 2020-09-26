@@ -127,13 +127,13 @@ class Client():
         self.__iconsole.set_command_parser(self.__parser)
 
     async def run(self, host=None, port=None):
+        self.__iconsole.printf(self.pytape)
         if host and port:
             conn = self.connect(host, port)
 
             try:
                 # Wait for 3 seconds, then raise TimeoutError
                 await asyncio.wait_for(conn, timeout=5)
-                self.__iconsole.printf(self.pytape)
             except asyncio.TimeoutError:
                 print("\rConnection timeout")
                 sys.exit(1)
