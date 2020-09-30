@@ -22,8 +22,8 @@ conf = {
     'notify': True,
     'mail_smtp_host': 'smtp.mail.ru',
     'mail_smtp_port': '465',
-    'mail_from': 'proxima@gaorel.ru',
-    'mail_to': 'sakharuk@gaorel.ru'
+    'mail_from': '',
+    'mail_to': ''
 }
 
 
@@ -46,7 +46,7 @@ class Server():
             b'WIND': '_c_wind'
         }
 
-        self.__smtp_pass = "e=KX30dujWnH"
+        self.__smtp_pass = ""
 
         self.__last_error = ''
 
